@@ -2,6 +2,7 @@
 
 import eslint from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
+import turboPlugin from "eslint-plugin-turbo";
 import tseslint from "typescript-eslint";
 
 /**
@@ -34,12 +35,13 @@ export const restrictEnvAccess = tseslint.config({
 export default tseslint.config(
   {
     // Globally ignored files
-    ignores: ["**/*.config.js"],
+    ignores: ["**/*.config.*"],
   },
   {
     files: ["**/*.js", "**/*.ts", "**/*.tsx"],
     plugins: {
       import: importPlugin,
+      turbo: turboPlugin,
     },
     extends: [
       eslint.configs.recommended,
@@ -48,6 +50,7 @@ export default tseslint.config(
       ...tseslint.configs.stylisticTypeChecked,
     ],
     rules: {
+      ...turboPlugin.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
@@ -72,6 +75,6 @@ export default tseslint.config(
   },
   {
     linterOptions: { reportUnusedDisableDirectives: true },
-    languageOptions: { parserOptions: { project: true } },
+    languageOptions: { parserOptions: { projectService: true } },
   },
 );
