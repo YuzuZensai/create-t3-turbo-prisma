@@ -1,4 +1,8 @@
-import type { DefaultSession, NextAuthConfig } from "next-auth";
+import type {
+  DefaultSession,
+  NextAuthConfig,
+  Session as NextAuthSession,
+} from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Discord from "next-auth/providers/discord";
 
@@ -12,21 +16,14 @@ declare module "next-auth" {
   }
 }
 
-const adapter = DrizzleAdapter(db, {
-  usersTable: User,
-  accountsTable: Account,
-  sessionsTable: Session,
-});
-
-export const isSecureContext = env.NODE_ENV !== "development";
+export const isSecureContext = process.env.NODE_ENV !== "development";
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
   providers: [Discord],
   callbacks: {
     session: (opts) => {
-      if (!("user" in opts))
-        throw new Error("unreachable with session strategy");
+      if (!("user" in opts)) throw "unreachable with session strategy";
 
       return {
         ...opts.session,
@@ -43,17 +40,28 @@ export const validateToken = async (
   token: string,
 ): Promise<NextAuthSession | null> => {
   const sessionToken = token.slice("Bearer ".length);
-  const session = await adapter.getSessionAndUser?.(sessionToken);
+  const session = await prisma.session.findUnique({
+    where: {
+      sessionToken: sessionToken,
+    },
+    include: {
+      user: true,
+    },
+  });
   return session
     ? {
         user: {
           ...session.user,
         },
-        expires: session.session.expires.toISOString(),
+        expires: session.expires.toISOString(),
       }
     : null;
 };
 
 export const invalidateSessionToken = async (token: string) => {
-  await adapter.deleteSession?.(token);
+  await prisma.session.delete({
+    where: {
+      sessionToken: token,
+    },
+  });
 };

@@ -11,7 +11,19 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import type { Session } from "@acme/auth";
+import { auth, validateToken } from "@acme/auth";
 import { prisma } from "@acme/db";
+
+/**
+ * Isomorphic Session getter for API requests
+ * - Expo requests will have a session token in the Authorization header
+ * - Next.js requests will have a session token in cookies
+ */
+const isomorphicGetSession = async (headers: Headers) => {
+  const authToken = headers.get("Authorization") ?? null;
+  if (authToken) return validateToken(authToken);
+  return auth();
+};
 
 /**
  * 1. CONTEXT
@@ -38,6 +50,7 @@ export const createTRPCContext = async (opts: {
   return {
     session,
     prisma,
+    token: authToken,
   };
 };
 
